@@ -38,7 +38,7 @@ class FormatNotSupportedError(PandocBridgeError):
         supported_formats: list[str] | None = None,
     ) -> None:
         message = f"Format '{format_name}' is not supported as {format_type}"
-        details = {"format": format_name, "format_type": format_type}
+        details: dict[str, Any] = {"format": format_name, "format_type": format_type}
         if supported_formats:
             details["supported_formats"] = supported_formats
         super().__init__(message, details)

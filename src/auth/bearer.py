@@ -91,11 +91,12 @@ def create_token(
         "exp": expire,
     }
 
-    return jwt.encode(
+    encoded: str = jwt.encode(
         payload,
         settings.jwt_secret_key,
         algorithm=settings.jwt_algorithm,
     )
+    return encoded
 
 
 def extract_bearer_token(authorization: str | None) -> str:
