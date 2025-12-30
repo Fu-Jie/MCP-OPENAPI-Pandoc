@@ -170,7 +170,7 @@ jobs:
         # 输出：本地缓存目录
         # 错误处理：缓存缺失仅影响性能不影响功能
         # ----------------------------------------------------------------
-        uses: actions/cache@v4.0.2
+        uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
           key: buildx-${{ github.workflow }}-${{ github.ref_name }}-${{ hashFiles(env.DOCKERFILE, '**/pyproject.toml') }}

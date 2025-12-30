@@ -95,7 +95,7 @@ jobs:
         # ----------------------------------------------------------------
         # 功能说明：恢复 GHA 缓存以模拟真实构建性能
         # ----------------------------------------------------------------
-        uses: actions/cache@v4.0.2
+        uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
           key: dryrun-buildx-${{ github.ref_name }}-${{ hashFiles('Dockerfile.example', '**/pyproject.toml') }}
