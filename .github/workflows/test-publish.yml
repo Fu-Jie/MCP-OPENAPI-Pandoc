@@ -153,9 +153,11 @@ jobs:
             elif event == "push" and ref.startswith("refs/tags/"):
                 required.append("latest")
 
-            missing = [needle for needle in required if needle not in tags]
-            for needle in missing:
-                print(f"missing tag {needle}", file=sys.stderr)
+            missing = []
+            for needle in required:
+                if needle not in tags:
+                    missing.append(needle)
+                    print(f"missing tag {needle}", file=sys.stderr)
             if missing:
                 sys.exit(1)
           PY
@@ -217,7 +219,7 @@ jobs:
 
             note = f"x-oauth-scopes: {scopes}"
             print(note)
-            report_dir = os.environ.get("REPORT_DIR", "artifacts")
+            report_dir = os.environ["REPORT_DIR"]
             with open(os.path.join(report_dir, "token-scope.txt"), "w", encoding="utf-8") as fh:
                 fh.write(note + "\n")
           PY
@@ -230,7 +232,7 @@ jobs:
           python - <<'PY'
             import json, os, pathlib
 
-            report_dir = os.environ.get("REPORT_DIR", "artifacts")
+            report_dir = os.environ["REPORT_DIR"]
             pathlib.Path(report_dir).mkdir(parents=True, exist_ok=True)
             data = {
                 "workflow": "test-publish",
