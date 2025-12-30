@@ -210,6 +210,7 @@ jobs:
 
             token = os.environ.get("GITHUB_TOKEN")
             req = urllib.request.Request("https://api.github.com/user", headers={"Authorization": f"Bearer {token}"})
+            scopes = "<none>"
             try:
                 with urllib.request.urlopen(req) as resp:
                     scopes = resp.headers.get("x-oauth-scopes", "<none>")
