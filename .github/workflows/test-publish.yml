@@ -197,8 +197,13 @@ jobs:
           python -c "import os, urllib.request; \
             token = os.environ.get('GITHUB_TOKEN'); \
             req = urllib.request.Request('https://api.github.com/user', headers={'Authorization': f'Bearer {token}'}); \
-            with urllib.request.urlopen(req) as resp: scopes = resp.headers.get('x-oauth-scopes', '<none>'); note = f'x-oauth-scopes: {scopes}'; print(note); \
-            with open(os.path.join('${REPORT_DIR}', 'token-scope.txt'), 'w', encoding='utf-8') as fh: fh.write(note + '\\n')"
+            resp = urllib.request.urlopen(req); \
+            scopes = resp.headers.get('x-oauth-scopes', '<none>'); \
+            note = f'x-oauth-scopes: {scopes}'; \
+            print(note); \
+            resp.close(); \
+            report_dir = os.environ.get('REPORT_DIR', 'artifacts'); \
+            with open(os.path.join(report_dir, 'token-scope.txt'), 'w', encoding='utf-8') as fh: fh.write(note + '\\n')"
 
       - name: "📊 Generate coverage-style report"
         # ----------------------------------------------------------------
