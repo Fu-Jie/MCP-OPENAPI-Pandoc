@@ -146,9 +146,9 @@ jobs:
             required = [\"${{ github.sha }}\"]; \
             event = os.environ.get('GITHUB_EVENT_NAME', ''); \
             ref = os.environ.get('GITHUB_REF', ''); \
-            required.append('latest') if (event in {'workflow_dispatch', 'schedule'} or (event == 'push' and ref.startswith('refs/tags/'))) else None; \
+            if (event in {'workflow_dispatch', 'schedule'} or (event == 'push' and ref.startswith('refs/tags/'))): required.append('latest'); \
             missing = [needle for needle in required if needle not in tags]; \
-            [print(f'missing tag {needle}', file=sys.stderr) for needle in missing]; \
+            for needle in missing: print(f'missing tag {needle}', file=sys.stderr); \
             sys.exit(1 if missing else 0)"
 
       - name: "🔍 Dockerfile syntax check"
@@ -204,7 +204,7 @@ jobs:
             print(note); \
             resp.close(); \
             report_dir = os.environ.get('REPORT_DIR', 'artifacts'); \
-            with open(os.path.join(report_dir, 'token-scope.txt'), 'w', encoding='utf-8') as fh: fh.write(note + '\\n')"
+            with open(os.path.join(report_dir, 'token-scope.txt'), 'w', encoding='utf-8') as fh: fh.write(note + '\n')"
 
       - name: "📊 Generate coverage-style report"
         # ----------------------------------------------------------------
