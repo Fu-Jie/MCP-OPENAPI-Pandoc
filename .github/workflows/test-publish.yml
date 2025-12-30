@@ -215,7 +215,7 @@ jobs:
                 with urllib.request.urlopen(req) as resp:
                     scopes = resp.headers.get("x-oauth-scopes", "<none>")
             except Exception as exc:
-                print(f"token scope fetch failed: {exc}", file=sys.stderr)
+                print(f"failed to fetch GitHub token scopes: {exc}", file=sys.stderr)
                 sys.exit(1)
 
             note = f"x-oauth-scopes: {scopes}"
