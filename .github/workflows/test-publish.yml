@@ -148,7 +148,9 @@ jobs:
             required = ["${{ github.sha }}"]
             event = os.environ.get("GITHUB_EVENT_NAME", "")
             ref = os.environ.get("GITHUB_REF", "")
-            if event in {"workflow_dispatch", "schedule"} or (event == "push" and ref.startswith("refs/tags/")):
+            if event in {"workflow_dispatch", "schedule"}:
+                required.append("latest")
+            elif event == "push" and ref.startswith("refs/tags/"):
                 required.append("latest")
 
             missing = [needle for needle in required if needle not in tags]
@@ -215,7 +217,7 @@ jobs:
 
             note = f"x-oauth-scopes: {scopes}"
             print(note)
-            report_dir = os.environ.get("REPORT_DIR", "artifacts")
+            report_dir = os.environ["REPORT_DIR"] if "REPORT_DIR" in os.environ else "artifacts"
             with open(os.path.join(report_dir, "token-scope.txt"), "w", encoding="utf-8") as fh:
                 fh.write(note + "\n")
           PY
@@ -228,7 +230,7 @@ jobs:
           python - <<'PY'
             import json, os, pathlib
 
-            report_dir = os.environ.get("REPORT_DIR", "artifacts")
+            report_dir = os.environ["REPORT_DIR"] if "REPORT_DIR" in os.environ else "artifacts"
             pathlib.Path(report_dir).mkdir(parents=True, exist_ok=True)
             data = {
                 "workflow": "test-publish",
