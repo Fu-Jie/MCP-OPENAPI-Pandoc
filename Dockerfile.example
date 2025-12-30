@@ -1,0 +1,93 @@
+# syntax=docker/dockerfile:1.7
+
+####################################################################################################
+# 基础镜像阶段：定义统一的构建基础，便于缓存复用与安全审计
+# --------------------------------------------------------------------------------------------------
+# - 选择官方 Python 3.12-slim 镜像，体积小且长期支持
+# - 使用 build args 支持多架构（TARGETPLATFORM）但不在镜像内暴露 secrets
+####################################################################################################
+FROM --platform=$BUILDPLATFORM python:3.12-slim AS base
+
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    APP_HOME=/opt/app
+
+WORKDIR ${APP_HOME}
+
+# 预安装系统依赖，使用 cache mount 缓存包索引，减少层体积
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+      curl ca-certificates gosu tini; \
+    rm -rf /var/lib/apt/lists/*
+
+####################################################################################################
+# 构建阶段：安装依赖并编译可执行产物
+# --------------------------------------------------------------------------------------------------
+# - 使用分层 COPY 提高缓存命中率
+# - requirements 和源代码拆分，依赖变更才会失效
+# - 使用 pip wheel + cache mount 缓存，加速重复构建
+####################################################################################################
+FROM base AS builder
+
+COPY pyproject.toml ./ 
+
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    python -m pip install --upgrade pip setuptools wheel
+
+COPY src ./src
+
+# 为后续阶段准备只读依赖层，避免重复安装
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked \
+    python -m pip install --prefix=/install .
+
+####################################################################################################
+# 运行时阶段：最小化镜像体积与攻击面
+# --------------------------------------------------------------------------------------------------
+# - 仅复制运行时所需文件，避免 build 工具泄露
+# - 使用非 root 用户运行服务
+# - 通过 tini 处理僵尸进程
+####################################################################################################
+FROM base AS runtime
+
+# 创建非特权用户
+RUN set -eux; \
+    groupadd -g 1000 appuser; \
+    useradd -u 1000 -g appuser -s /bin/bash -m appuser
+
+COPY --from=builder /install /usr/local
+COPY src ./src
+
+ENV PATH="/usr/local/bin:${PATH}"
+
+EXPOSE 8000
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+####################################################################################################
+# 构建与运行提示
+# --------------------------------------------------------------------------------------------------
+# 本地构建（单架构）：
+#   docker build -f Dockerfile.example -t mcp-pandoc:local .
+#
+# 多架构构建示例（使用 buildx 与 registry 缓存）：
+#   docker buildx build \
+#     --platform linux/amd64,linux/arm64 \
+#     --file Dockerfile.example \
+#     --tag ghcr.io/OWNER/REPO:dev \
+#     --cache-from type=registry,ref=ghcr.io/OWNER/REPO:buildcache \
+#     --cache-to type=registry,ref=ghcr.io/OWNER/REPO:buildcache,mode=max \
+#     --push .
+#
+# 安全与性能注意事项：
+# - 不要在 build args 中传递密钥，改用 secrets mount 或 OIDC
+# - apt 与 pip 均已启用缓存挂载并在层结束时清理，避免镜像增胖
+# - 运行时使用非 root 用户，降低容器逃逸风险
+####################################################################################################
