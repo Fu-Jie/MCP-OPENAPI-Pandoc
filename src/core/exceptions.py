@@ -84,7 +84,9 @@ class AuthenticationError(PandocBridgeError):
     code = "UNAUTHORIZED"
     http_status = 401
 
-    def __init__(self, message: str = "Invalid or missing authentication token") -> None:
+    def __init__(
+        self, message: str = "Invalid or missing authentication token"
+    ) -> None:
         super().__init__(message)
 
 
@@ -94,7 +96,11 @@ class AuthorizationError(PandocBridgeError):
     code = "FORBIDDEN"
     http_status = 403
 
-    def __init__(self, message: str = "Insufficient permissions", required_scopes: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        message: str = "Insufficient permissions",
+        required_scopes: list[str] | None = None,
+    ) -> None:
         details = {}
         if required_scopes:
             details["required_scopes"] = required_scopes
@@ -108,5 +114,7 @@ class FileSizeError(PandocBridgeError):
     http_status = 413
 
     def __init__(self, file_size: int, max_size: int) -> None:
-        message = f"File size ({file_size} bytes) exceeds maximum allowed ({max_size} bytes)"
+        message = (
+            f"File size ({file_size} bytes) exceeds maximum allowed ({max_size} bytes)"
+        )
         super().__init__(message, {"file_size": file_size, "max_size": max_size})

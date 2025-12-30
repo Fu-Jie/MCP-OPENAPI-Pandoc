@@ -78,7 +78,9 @@ async def list_formats(
     )
 
 
-@router.post("/api/v1/convert/text", response_model=ConvertTextResponse, tags=["Convert"])
+@router.post(
+    "/api/v1/convert/text", response_model=ConvertTextResponse, tags=["Convert"]
+)
 async def convert_text(
     request: ConvertTextRequest,
     auth: RequireAuth,
@@ -122,7 +124,9 @@ async def convert_file(
     to_format: Annotated[str, Form(description="Target format")],
     auth: RequireAuth,
     service: Annotated[ConversionService, Depends(get_conversion_service)],
-    from_format: Annotated[str | None, Form(description="Source format (optional)")] = None,
+    from_format: Annotated[
+        str | None, Form(description="Source format (optional)")
+    ] = None,
 ) -> Response:
     """Convert an uploaded file to another format.
 

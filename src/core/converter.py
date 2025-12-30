@@ -219,7 +219,8 @@ class ConversionService:
         """Get Pandoc version string."""
         try:
             proc = await asyncio.create_subprocess_exec(
-                "pandoc", "--version",
+                "pandoc",
+                "--version",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )

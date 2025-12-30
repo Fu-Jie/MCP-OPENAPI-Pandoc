@@ -130,7 +130,13 @@ class TestConvertFile:
             "/api/v1/convert/file",
             headers=auth_headers,
             data={"to_format": "html"},
-            files={"file": ("test.md", b"# Test Document\n\nContent here.", "text/markdown")},
+            files={
+                "file": (
+                    "test.md",
+                    b"# Test Document\n\nContent here.",
+                    "text/markdown",
+                )
+            },
         )
         assert response.status_code == 200
         assert response.headers["content-type"] == "text/html; charset=utf-8"

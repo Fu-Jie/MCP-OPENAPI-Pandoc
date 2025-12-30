@@ -30,9 +30,13 @@ class ConversionOptions(BaseModel):
     """Optional conversion settings."""
 
     standalone: bool = Field(default=True, description="Generate standalone document")
-    table_of_contents: bool = Field(default=False, description="Include table of contents")
+    table_of_contents: bool = Field(
+        default=False, description="Include table of contents"
+    )
     number_sections: bool = Field(default=False, description="Number section headings")
-    wrap: str = Field(default="auto", description="Text wrapping mode: auto, none, preserve")
+    wrap: str = Field(
+        default="auto", description="Text wrapping mode: auto, none, preserve"
+    )
     columns: int = Field(default=80, description="Column width for wrapping")
 
 
@@ -42,7 +46,9 @@ class ConvertTextRequest(BaseModel):
     content: str = Field(..., description="Text content to convert")
     from_format: str = Field(..., description="Source format (e.g., 'markdown')")
     to_format: str = Field(..., description="Target format (e.g., 'html')")
-    options: ConversionOptions | None = Field(default=None, description="Conversion options")
+    options: ConversionOptions | None = Field(
+        default=None, description="Conversion options"
+    )
 
 
 class ConvertTextResponse(BaseModel):
@@ -73,7 +79,9 @@ class ErrorDetail(BaseModel):
 
     code: str
     message: str
-    details: dict[str, str | int | bool | list[str] | None] = Field(default_factory=dict)
+    details: dict[str, str | int | bool | list[str] | None] = Field(
+        default_factory=dict
+    )
 
 
 class ErrorResponse(BaseModel):
