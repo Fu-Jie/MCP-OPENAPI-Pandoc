@@ -153,12 +153,12 @@ jobs:
             elif event == "push" and ref.startswith("refs/tags/"):
                 required.append("latest")
 
-            missing = []
+            missing_found = False
             for needle in required:
                 if needle not in tags:
-                    missing.append(needle)
+                    missing_found = True
                     print(f"missing tag {needle}", file=sys.stderr)
-            if missing:
+            if missing_found:
                 sys.exit(1)
           PY
 
