@@ -141,24 +141,7 @@ jobs:
         run: |
           mkdir -p "${REPORT_DIR}"
           echo "${{ steps.meta.outputs.tags }}" > "${REPORT_DIR}/tag-check.txt"
-          python - <<'PY'
-          import os, sys
-          tags = """${{ steps.meta.outputs.tags }}"""
-          required = ["${{ github.sha }}"]
-          event = os.environ.get("GITHUB_EVENT_NAME", "")
-          ref = os.environ.get("GITHUB_REF", "")
-          if event in {"workflow_dispatch", "schedule"}:
-              required.append("latest")
-          elif event == "push" and ref.startswith("refs/tags/"):
-              required.append("latest")
-          ok = True
-          for needle in required:
-              if needle not in tags:
-                  ok = False
-                  print(f"missing tag {needle}", file=sys.stderr)
-          if not ok:
-              sys.exit(1)
-PY
+          python -c "import os, sys; tags = \"\"\"${{ steps.meta.outputs.tags }}\"\"\"; required = [\"${{ github.sha }}\"]; event = os.environ.get('GITHUB_EVENT_NAME', ''); ref = os.environ.get('GITHUB_REF', ''); required.append('latest') if (event in {'workflow_dispatch', 'schedule'} or (event == 'push' and ref.startswith('refs/tags/'))) else None; missing = [needle for needle in required if needle not in tags]; [print(f'missing tag {needle}', file=sys.stderr) for needle in missing]; sys.exit(1 if missing else 0)"
 
       - name: "🔍 Dockerfile syntax check"
         # ----------------------------------------------------------------
@@ -203,17 +186,7 @@ PY
         # 功能说明：记录 GITHUB_TOKEN 的有效权限头信息，确保最小权限
         # ----------------------------------------------------------------
         run: |
-          python - <<'PY'
-import os, sys, urllib.request
-token = os.environ.get("GITHUB_TOKEN")
-req = urllib.request.Request("https://api.github.com/user", headers={"Authorization": f"Bearer {token}"})
-with urllib.request.urlopen(req) as resp:
-    scopes = resp.headers.get("x-oauth-scopes", "<none>")
-    note = f"x-oauth-scopes: {scopes}"
-    print(note)
-    with open(os.path.join("${REPORT_DIR}", "token-scope.txt"), "w", encoding="utf-8") as fh:
-        fh.write(note + "\n")
-PY
+          python -c "import os, urllib.request; token = os.environ.get('GITHUB_TOKEN'); req = urllib.request.Request('https://api.github.com/user', headers={'Authorization': f'Bearer {token}'}); with urllib.request.urlopen(req) as resp: scopes = resp.headers.get('x-oauth-scopes', '<none>'); note = f'x-oauth-scopes: {scopes}'; print(note); with open(os.path.join('${REPORT_DIR}', 'token-scope.txt'), 'w', encoding='utf-8') as fh: fh.write(note + '\\n')"
 
       - name: "📊 Generate coverage-style report"
         # ----------------------------------------------------------------
@@ -221,18 +194,7 @@ PY
         # ----------------------------------------------------------------
         run: |
           mkdir -p "${REPORT_DIR}"
-          cat > "${REPORT_DIR}/test-coverage.json" <<'EOF'
-          {
-            "workflow": "test-publish",
-            "coverage": 0.85,
-            "checks": {
-              "tag_generation": true,
-              "dockerfile_syntax": true,
-              "multiarch_build": true,
-              "permissions_logged": true
-            }
-          }
-EOF
+          python -c "import json, os, pathlib; report_dir = os.environ.get('REPORT_DIR', 'artifacts'); pathlib.Path(report_dir).mkdir(parents=True, exist_ok=True); data = {'workflow': 'test-publish', 'coverage': 0.85, 'checks': {'tag_generation': True, 'dockerfile_syntax': True, 'multiarch_build': True, 'permissions_logged': True}}; pathlib.Path(report_dir, 'test-coverage.json').write_text(json.dumps(data, indent=2), encoding='utf-8')"
 
       - name: "📤 Upload test artifacts"
         # ----------------------------------------------------------------
