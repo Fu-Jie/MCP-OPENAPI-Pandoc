@@ -194,17 +194,24 @@ jobs:
         # 功能说明：记录 GITHUB_TOKEN 的有效权限头信息，确保最小权限
         # ----------------------------------------------------------------
         run: |
-          python -c "import os, sys, urllib.request; \
-            token = os.environ.get('GITHUB_TOKEN'); \
-            req = urllib.request.Request('https://api.github.com/user', headers={'Authorization': f'Bearer {token}'}); \
-            try: resp = urllib.request.urlopen(req); \
-            except Exception as exc: print(f'token scope fetch failed: {exc}', file=sys.stderr); sys.exit(1); \
-            scopes = resp.headers.get('x-oauth-scopes', '<none>'); \
-            note = f'x-oauth-scopes: {scopes}'; \
-            print(note); \
-            resp.close(); \
-            report_dir = os.environ.get('REPORT_DIR', 'artifacts'); \
-            with open(os.path.join(report_dir, 'token-scope.txt'), 'w', encoding='utf-8') as fh: fh.write(note + '\n')"
+          python - <<'PY'
+            import os, sys, urllib.request
+
+            token = os.environ.get("GITHUB_TOKEN")
+            req = urllib.request.Request("https://api.github.com/user", headers={"Authorization": f"Bearer {token}"})
+            try:
+                with urllib.request.urlopen(req) as resp:
+                    scopes = resp.headers.get("x-oauth-scopes", "<none>")
+            except Exception as exc:
+                print(f"token scope fetch failed: {exc}", file=sys.stderr)
+                sys.exit(1)
+
+            note = f"x-oauth-scopes: {scopes}"
+            print(note)
+            report_dir = os.environ.get("REPORT_DIR", "artifacts")
+            with open(os.path.join(report_dir, "token-scope.txt"), "w", encoding="utf-8") as fh:
+                fh.write(note + "\n")
+          PY
 
       - name: "📊 Generate coverage-style report"
         # ----------------------------------------------------------------
