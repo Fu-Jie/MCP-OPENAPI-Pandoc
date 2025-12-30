@@ -365,23 +365,23 @@ jobs:
           fi
           if [ -n "${EMAIL_SMTP_ENDPOINT:-}" ] && [ -n "${EMAIL_TO:-}" ]; then
             python - <<'PY'
-import os, smtplib, ssl, sys
-from email.message import EmailMessage
-msg = EmailMessage()
-msg["Subject"] = "GHCR 发布失败告警"
-msg["From"] = os.environ.get("NOTIFY_FROM_EMAIL", "github-actions@users.noreply.github.com")
-msg["To"] = os.environ["EMAIL_TO"]
-msg.set_content(f"仓库 {os.environ['GITHUB_REPOSITORY']} 发布失败，参考运行 {os.environ['GITHUB_RUN_ID']}")
-context = ssl.create_default_context()
-try:
-    with smtplib.SMTP(os.environ["EMAIL_SMTP_ENDPOINT"]) as smtp:
-        smtp.starttls(context=context)
-        user = os.environ.get("SMTP_USERNAME")
-        pwd = os.environ.get("SMTP_PASSWORD")
-        if user and pwd:
-            smtp.login(user, pwd)
-        smtp.send_message(msg)
-except Exception as exc:
-    print(f"::warning::邮件发送失败: {exc}", file=sys.stderr)
-PY
+            import os, smtplib, ssl, sys
+            from email.message import EmailMessage
+            msg = EmailMessage()
+            msg["Subject"] = "GHCR 发布失败告警"
+            msg["From"] = os.environ.get("NOTIFY_FROM_EMAIL", "github-actions@users.noreply.github.com")
+            msg["To"] = os.environ["EMAIL_TO"]
+            msg.set_content(f"仓库 {os.environ['GITHUB_REPOSITORY']} 发布失败，参考运行 {os.environ['GITHUB_RUN_ID']}")
+            context = ssl.create_default_context()
+            try:
+                with smtplib.SMTP(os.environ["EMAIL_SMTP_ENDPOINT"]) as smtp:
+                    smtp.starttls(context=context)
+                    user = os.environ.get("SMTP_USERNAME")
+                    pwd = os.environ.get("SMTP_PASSWORD")
+                    if user and pwd:
+                        smtp.login(user, pwd)
+                    smtp.send_message(msg)
+            except Exception as exc:
+                print(f"::warning::邮件发送失败: {exc}", file=sys.stderr)
+            PY
           fi
