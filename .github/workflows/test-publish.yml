@@ -194,10 +194,11 @@ jobs:
         # 功能说明：记录 GITHUB_TOKEN 的有效权限头信息，确保最小权限
         # ----------------------------------------------------------------
         run: |
-          python -c "import os, urllib.request; \
+          python -c "import os, sys, urllib.request; \
             token = os.environ.get('GITHUB_TOKEN'); \
             req = urllib.request.Request('https://api.github.com/user', headers={'Authorization': f'Bearer {token}'}); \
-            resp = urllib.request.urlopen(req); \
+            try: resp = urllib.request.urlopen(req); \
+            except Exception as exc: print(f'token scope fetch failed: {exc}', file=sys.stderr); sys.exit(1); \
             scopes = resp.headers.get('x-oauth-scopes', '<none>'); \
             note = f'x-oauth-scopes: {scopes}'; \
             print(note); \
@@ -210,7 +211,6 @@ jobs:
         # 功能说明：输出流程验证结果的覆盖率风格数据
         # ----------------------------------------------------------------
         run: |
-          mkdir -p "${REPORT_DIR}"
           python -c "import json, os, pathlib; \
             report_dir = os.environ.get('REPORT_DIR', 'artifacts'); \
             pathlib.Path(report_dir).mkdir(parents=True, exist_ok=True); \
