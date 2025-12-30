@@ -219,7 +219,7 @@ jobs:
 
             note = f"x-oauth-scopes: {scopes}"
             print(note)
-            report_dir = os.environ["REPORT_DIR"]
+            report_dir = os.environ.get("REPORT_DIR", "artifacts")
             with open(os.path.join(report_dir, "token-scope.txt"), "w", encoding="utf-8") as fh:
                 fh.write(note + "\n")
           PY
@@ -232,7 +232,7 @@ jobs:
           python - <<'PY'
             import json, os, pathlib
 
-            report_dir = os.environ["REPORT_DIR"]
+            report_dir = os.environ.get("REPORT_DIR", "artifacts")
             pathlib.Path(report_dir).mkdir(parents=True, exist_ok=True)
             data = {
                 "workflow": "test-publish",
