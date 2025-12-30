@@ -244,7 +244,8 @@ jobs:
                     "permissions_logged": True,
                 },
             }
-            pathlib.Path(report_dir, "test-coverage.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
+            output_path = pathlib.Path(report_dir, "test-coverage.json")
+            output_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
           PY
 
       - name: "📤 Upload test artifacts"
