@@ -122,7 +122,8 @@ class FormatManager:
         try:
             # Get input formats
             input_proc = await asyncio.create_subprocess_exec(
-                "pandoc", "--list-input-formats",
+                "pandoc",
+                "--list-input-formats",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -132,7 +133,8 @@ class FormatManager:
 
             # Get output formats
             output_proc = await asyncio.create_subprocess_exec(
-                "pandoc", "--list-output-formats",
+                "pandoc",
+                "--list-output-formats",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
@@ -162,10 +164,7 @@ class FormatManager:
             output=self._output_formats or self.DEFAULT_OUTPUT_FORMATS,
         )
         # In Pandoc, any input format can be converted to any output format
-        return {
-            input_fmt: formats.output
-            for input_fmt in formats.input
-        }
+        return {input_fmt: formats.output for input_fmt in formats.input}
 
 
 # Content type mappings

@@ -71,3 +71,6 @@ temp/
 
 # Templates (keep as volume mount)
 templates/
+
+# GitHub Pages build output
+public/

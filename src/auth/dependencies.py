@@ -14,7 +14,9 @@ http_bearer = HTTPBearer(auto_error=False)
 
 async def require_auth_http(
     request: Request,
-    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(http_bearer)] = None,
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None, Depends(http_bearer)
+    ] = None,
 ) -> TokenPayload:
     """Dependency to require authentication for HTTP requests.
 
@@ -44,7 +46,9 @@ async def require_auth_http(
 
 async def get_optional_auth(
     request: Request,
-    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(http_bearer)] = None,
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None, Depends(http_bearer)
+    ] = None,
 ) -> TokenPayload | None:
     """Dependency for optional authentication.
 
