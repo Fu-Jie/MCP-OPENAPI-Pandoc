@@ -95,7 +95,7 @@ jobs:
         # ----------------------------------------------------------------
         # 功能说明：恢复 GHA 缓存以模拟真实构建性能
         # ----------------------------------------------------------------
-        uses: actions/cache@v4.0.2
+        uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
           key: dryrun-buildx-${{ github.ref_name }}-${{ hashFiles('Dockerfile.example', '**/pyproject.toml') }}
@@ -142,23 +142,25 @@ jobs:
           mkdir -p "${REPORT_DIR}"
           echo "${{ steps.meta.outputs.tags }}" > "${REPORT_DIR}/tag-check.txt"
           python - <<'PY'
-import os, sys
-tags = """${{ steps.meta.outputs.tags }}"""
-required = ["${{ github.sha }}"]
-event = os.environ.get("GITHUB_EVENT_NAME", "")
-ref = os.environ.get("GITHUB_REF", "")
-if event in {"workflow_dispatch", "schedule"}:
-    required.append("latest")
-elif event == "push" and ref.startswith("refs/tags/"):
-    required.append("latest")
-ok = True
-for needle in required:
-    if needle not in tags:
-        ok = False
-        print(f"missing tag {needle}", file=sys.stderr)
-if not ok:
-    sys.exit(1)
-PY
+            import os, sys
+
+            tags = """${{ steps.meta.outputs.tags }}"""
+            required = ["${{ github.sha }}"]
+            event = os.environ.get("GITHUB_EVENT_NAME", "")
+            ref = os.environ.get("GITHUB_REF", "")
+            if event == "schedule":
+                required.append("latest")
+            elif event == "push" and ref.startswith("refs/tags/"):
+                required.append("latest")
+
+            missing_found = False
+            for needle in required:
+                if needle not in tags:
+                    missing_found = True
+                    print(f"missing tag {needle}", file=sys.stderr)
+            if missing_found:
+                sys.exit(1)
+          PY
 
       - name: "🔍 Dockerfile syntax check"
         # ----------------------------------------------------------------
@@ -204,35 +206,48 @@ PY
         # ----------------------------------------------------------------
         run: |
           python - <<'PY'
-import os, sys, urllib.request
-token = os.environ.get("GITHUB_TOKEN")
-req = urllib.request.Request("https://api.github.com/user", headers={"Authorization": f"Bearer {token}"})
-with urllib.request.urlopen(req) as resp:
-    scopes = resp.headers.get("x-oauth-scopes", "<none>")
-    note = f"x-oauth-scopes: {scopes}"
-    print(note)
-    with open(os.path.join("${REPORT_DIR}", "token-scope.txt"), "w", encoding="utf-8") as fh:
-        fh.write(note + "\n")
-PY
+            import os, sys, urllib.request
+
+            token = os.environ.get("GITHUB_TOKEN")
+            req = urllib.request.Request("https://api.github.com/user", headers={"Authorization": f"Bearer {token}"})
+            scopes = "<none>"
+            try:
+                with urllib.request.urlopen(req) as resp:
+                    scopes = resp.headers.get("x-oauth-scopes", "<none>")
+            except Exception as exc:
+                print(f"failed to fetch GitHub token scopes: {exc}", file=sys.stderr)
+                sys.exit(1)
+
+            note = f"x-oauth-scopes: {scopes}"
+            print(note)
+            report_dir = os.environ.get("REPORT_DIR", "artifacts")
+            with open(os.path.join(report_dir, "token-scope.txt"), "w", encoding="utf-8") as fh:
+                fh.write(note + "\n")
+          PY
 
       - name: "📊 Generate coverage-style report"
         # ----------------------------------------------------------------
         # 功能说明：输出流程验证结果的覆盖率风格数据
         # ----------------------------------------------------------------
         run: |
-          mkdir -p "${REPORT_DIR}"
-          cat > "${REPORT_DIR}/test-coverage.json" <<'EOF'
-          {
-            "workflow": "test-publish",
-            "coverage": 0.85,
-            "checks": {
-              "tag_generation": true,
-              "dockerfile_syntax": true,
-              "multiarch_build": true,
-              "permissions_logged": true
+          python - <<'PY'
+            import json, os, pathlib
+
+            report_dir = os.environ.get("REPORT_DIR", "artifacts")
+            pathlib.Path(report_dir).mkdir(parents=True, exist_ok=True)
+            data = {
+                "workflow": "test-publish",
+                "coverage": 0.85,
+                "checks": {
+                    "tag_generation": True,
+                    "dockerfile_syntax": True,
+                    "multiarch_build": True,
+                    "permissions_logged": True,
+                },
             }
-          }
-EOF
+            output_path = pathlib.Path(report_dir, "test-coverage.json")
+            output_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+          PY
 
       - name: "📤 Upload test artifacts"
         # ----------------------------------------------------------------
