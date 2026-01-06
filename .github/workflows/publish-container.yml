@@ -67,8 +67,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
   BUILD_PLATFORMS: "linux/amd64,linux/arm64"
-  CACHE_REGISTRY: "ghcr.io/${{ github.repository }}:buildcache"
   DOCKERFILE: "Dockerfile.example"
   BUILDX_INSTANCE: "gha-multiarch-builder"
   SBOM_PATH: "artifacts/sbom.json"
@@ -266,11 +266,9 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: |
             type=gha,scope=${{ github.workflow }}-${{ github.ref_name }}
-            type=registry,ref=${{ env.CACHE_REGISTRY }}
             type=local,src=/tmp/.buildx-cache
           cache-to: |
             type=gha,mode=max,scope=${{ github.workflow }}-${{ github.ref_name }}
-            type=registry,ref=${{ env.CACHE_REGISTRY }},mode=max
             type=local,dest=/tmp/.buildx-cache-new,mode=max
           outputs: type=image,push=true
 
