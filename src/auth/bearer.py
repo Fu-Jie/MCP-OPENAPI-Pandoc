@@ -1,22 +1,18 @@
-"""JWT Bearer token handling."""
+"""API Key authentication handling."""
 
-from datetime import UTC, datetime, timedelta
-from typing import Any
+from datetime import date
 
-from jose import ExpiredSignatureError, JWTError, jwt
 from pydantic import BaseModel
 
 from src.config import get_settings
-from src.core.exceptions import AuthenticationError, AuthorizationError
+from src.core.exceptions import AuthenticationError
 
 
 class TokenPayload(BaseModel):
-    """JWT token payload model."""
+    """Token payload model for authenticated requests."""
 
-    sub: str  # client-id
-    scopes: list[str] = []
-    exp: datetime | None = None
-    iat: datetime | None = None
+    sub: str  # API key identifier
+    scopes: list[str] = ["admin"]  # API keys have full access
 
     def has_scope(self, scope: str) -> bool:
         """Check if token has a specific scope."""
@@ -25,78 +21,14 @@ class TokenPayload(BaseModel):
         return scope in self.scopes
 
     def require_scope(self, scope: str) -> None:
-        """Require a specific scope, raise AuthorizationError if missing."""
+        """Require a specific scope, raise error if missing."""
+        from src.core.exceptions import AuthorizationError
+        
         if not self.has_scope(scope):
             raise AuthorizationError(
                 f"Missing required scope: {scope}",
                 required_scopes=[scope],
             )
-
-
-def verify_token(token: str) -> TokenPayload:
-    """Verify and decode a JWT token.
-
-    Args:
-        token: The JWT token string
-
-    Returns:
-        TokenPayload with decoded claims
-
-    Raises:
-        AuthenticationError: If token is invalid or expired
-    """
-    settings = get_settings()
-
-    try:
-        payload = jwt.decode(
-            token,
-            settings.jwt_secret_key,
-            algorithms=[settings.jwt_algorithm],
-        )
-        return TokenPayload(**payload)
-    except ExpiredSignatureError as e:
-        raise AuthenticationError("Token has expired") from e
-    except JWTError as e:
-        raise AuthenticationError(f"Invalid token: {e}") from e
-
-
-def create_token(
-    subject: str,
-    scopes: list[str] | None = None,
-    expires_delta: timedelta | None = None,
-) -> str:
-    """Create a new JWT token.
-
-    Args:
-        subject: The subject (client-id) for the token
-        scopes: List of permission scopes
-        expires_delta: Optional custom expiration time
-
-    Returns:
-        Encoded JWT token string
-    """
-    settings = get_settings()
-    scopes = scopes or []
-
-    now = datetime.now(UTC)
-    if expires_delta is None:
-        expires_delta = timedelta(hours=settings.jwt_expire_hours)
-
-    expire = now + expires_delta
-
-    payload: dict[str, Any] = {
-        "sub": subject,
-        "scopes": scopes,
-        "iat": now,
-        "exp": expire,
-    }
-
-    encoded: str = jwt.encode(
-        payload,
-        settings.jwt_secret_key,
-        algorithm=settings.jwt_algorithm,
-    )
-    return encoded
 
 
 def extract_bearer_token(authorization: str | None) -> str:
@@ -123,3 +55,44 @@ def extract_bearer_token(authorization: str | None) -> str:
         raise AuthenticationError("Invalid authentication scheme, expected 'Bearer'")
 
     return token
+
+
+def verify_api_key(api_key: str) -> TokenPayload:
+    """Verify API key and check expiration.
+
+    Args:
+        api_key: The API key string (e.g., sk-xxx)
+
+    Returns:
+        TokenPayload if valid
+
+    Raises:
+        AuthenticationError: If API key is invalid or expired
+    """
+    settings = get_settings()
+    api_keys = settings.get_api_keys()
+
+    if not api_keys:
+        raise AuthenticationError("No API keys configured")
+
+    if api_key not in api_keys:
+        raise AuthenticationError("Invalid API key")
+
+    # Check expiration
+    expiry = api_keys[api_key]
+    if expiry:
+        try:
+            expiry_date = date.fromisoformat(expiry)
+            if date.today() > expiry_date:
+                raise AuthenticationError(f"API key expired on {expiry}")
+        except ValueError:
+            # Invalid date format, treat as no expiry
+            pass
+
+    return TokenPayload(sub=api_key)
+
+
+# Alias for backward compatibility
+def verify_token(token: str) -> TokenPayload:
+    """Verify token (API key)."""
+    return verify_api_key(token)

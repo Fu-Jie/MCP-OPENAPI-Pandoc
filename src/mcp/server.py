@@ -44,6 +44,7 @@ async def convert_text(
     from_format: str,
     to_format: str,
     standalone: bool = True,
+    pdf_engine: str | None = None,
 ) -> dict[str, Any]:
     """Convert text from one format to another.
 
@@ -52,11 +53,12 @@ async def convert_text(
         from_format: Source format (e.g., 'markdown', 'html', 'latex')
         to_format: Target format (e.g., 'html', 'pdf', 'docx')
         standalone: Generate standalone document (default: True)
+        pdf_engine: PDF engine: pdflatex, xelatex (for CJK), lualatex
 
     Returns:
         Dictionary with success status, converted content, and content type
     """
-    return await convert_text_tool(content, from_format, to_format, standalone)
+    return await convert_text_tool(content, from_format, to_format, standalone, pdf_engine)
 
 
 @mcp.tool()
@@ -64,6 +66,7 @@ async def convert_file_base64(
     file_base64: str,
     filename: str,
     to_format: str,
+    pdf_engine: str | None = None,
 ) -> dict[str, Any]:
     """Convert a base64-encoded file to another format.
 
@@ -71,11 +74,12 @@ async def convert_file_base64(
         file_base64: Base64-encoded file content
         filename: Original filename (used to detect source format)
         to_format: Target format (e.g., 'html', 'pdf', 'markdown')
+        pdf_engine: PDF engine for PDF output (xelatex for CJK support)
 
     Returns:
         Dictionary with success status, converted content (base64), and content type
     """
-    return await convert_file_base64_tool(file_base64, filename, to_format)
+    return await convert_file_base64_tool(file_base64, filename, to_format, pdf_engine)
 
 
 @mcp.tool()

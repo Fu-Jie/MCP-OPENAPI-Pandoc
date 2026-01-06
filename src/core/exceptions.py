@@ -67,7 +67,7 @@ class ConversionError(PandocBridgeError):
         super().__init__(message, details)
 
 
-class TimeoutError(PandocBridgeError):
+class ConversionTimeoutError(PandocBridgeError):
     """Raised when conversion times out."""
 
     code = "TIMEOUT"

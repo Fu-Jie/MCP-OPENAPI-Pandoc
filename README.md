@@ -1,5 +1,9 @@
 # Pandoc Bridge
 
+[![CI/CD Pipeline](https://github.com/YOUR_USERNAME/pandoc-bridge/actions/workflows/pipeline.yml/badge.svg)](https://github.com/YOUR_USERNAME/pandoc-bridge/actions/workflows/pipeline.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+
 A document format conversion service using Pandoc, supporting both REST (OpenAPI 3.1) and MCP (Model Context Protocol) interfaces.
 
 ## Features
@@ -8,7 +12,15 @@ A document format conversion service using Pandoc, supporting both REST (OpenAPI
 - **Dual Protocol**: REST API with OpenAPI documentation and MCP server for AI assistants
 - **Bearer Token Auth**: Shared JWT authentication across both protocols
 - **Streaming Support**: Server-Sent Events for progress tracking
-- **Docker Ready**: Production-ready containerization
+- **Rate Limiting**: Built-in protection against abuse
+- **Docker Ready**: Production-ready containerization with multi-arch support
+
+## Documentation
+
+- [API Reference](docs/API.md) - Detailed REST API documentation
+- [MCP Integration](docs/MCP.md) - Model Context Protocol guide
+- [Container Registry Guide](docs/CONTAINER_REGISTRY.md) - Docker deployment guide
+- [OpenAPI Spec](/docs) - Interactive Swagger UI (when running)
 
 ## Quick Start
 
@@ -161,17 +173,23 @@ Or with authentication:
 
 ## Configuration
 
-Environment variables:
+Environment variables (see [.env.example](.env.example)):
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `HOST` | `0.0.0.0` | Server host |
 | `PORT` | `8000` | Server port |
 | `LOG_LEVEL` | `INFO` | Logging level |
-| `JWT_SECRET_KEY` | (required) | JWT signing key (min 32 chars) |
+| `ENVIRONMENT` | `development` | Environment (development/production) |
+| `JWT_SECRET_KEY` | *(required in prod)* | JWT signing key (min 32 chars) |
 | `JWT_EXPIRE_HOURS` | `24` | Token expiration time |
 | `MAX_FILE_SIZE_MB` | `50` | Maximum file size |
 | `CONVERSION_TIMEOUT` | `60` | Conversion timeout in seconds |
+
+> ⚠️ **Security Note**: Always set `JWT_SECRET_KEY` in production. Generate one with:
+> ```bash
+> python -c "import secrets; print(secrets.token_urlsafe(32))"
+> ```
 
 ## Development
 
@@ -185,7 +203,7 @@ pip install -e ".[dev]"
 pytest
 
 # Run with coverage
-pytest --cov=src
+pytest --cov=src --cov-report=html
 ```
 
 ### Lint Code
@@ -200,6 +218,49 @@ ruff format src tests
 
 ```bash
 mypy src
+```
+
+### Security Scan
+
+```bash
+# Install security tools
+pip install bandit safety
+
+# Run security scan
+bandit -r src -ll
+
+# Check dependencies
+safety check
+```
+
+## CI/CD
+
+The project uses GitHub Actions for continuous integration and deployment:
+
+- **CI Pipeline** (`pipeline.yml`):
+  - Runs on Python 3.12 and 3.13
+  - Linting with ruff
+  - Type checking with mypy
+  - Tests with pytest and coverage
+  - Security scanning with bandit
+  - Deploys documentation to GitHub Pages
+
+- **Container Publishing** (`publish-container.yml`):
+  - Triggered on version tags (`v*.*.*`)
+  - Multi-arch builds (amd64, arm64)
+  - Publishes to GitHub Container Registry
+
+### Running Locally
+
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit .env with your settings
+vim .env
+
+# Start with Docker
+docker-compose up --build
 ```
 
 ## Architecture

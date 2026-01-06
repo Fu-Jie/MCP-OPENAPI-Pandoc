@@ -1,5 +1,8 @@
 """Main application entry point - FastAPI + FastMCP integration."""
 
+import logging
+import sys
+
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,8 +12,17 @@ from src.api.routes import router
 from src.config import get_settings
 from src.core.exceptions import PandocBridgeError
 from src.mcp.server import mcp
+from src.middleware import RateLimitMiddleware, TracingMiddleware
 
 settings = get_settings()
+
+# Configure structured logging
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper()),
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+logger = logging.getLogger(__name__)
 
 # Create FastAPI application
 app = FastAPI(
@@ -55,6 +67,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add tracing middleware (must be before rate limiting)
+app.add_middleware(TracingMiddleware)
+
+# Add rate limiting middleware
+app.add_middleware(RateLimitMiddleware, requests_per_minute=60, burst_size=10)
+
 
 # Exception handlers
 @app.exception_handler(PandocBridgeError)
@@ -62,6 +80,7 @@ async def pandoc_bridge_exception_handler(
     request: Request, exc: PandocBridgeError
 ) -> JSONResponse:
     """Handle custom exceptions."""
+    logger.warning("Request error: %s - %s", exc.code, exc.message)
     return JSONResponse(
         status_code=exc.http_status,
         content=exc.to_dict(),
@@ -78,6 +97,7 @@ app.mount("/mcp", mcp.http_app())
 
 def run() -> None:
     """Run the application with uvicorn."""
+    logger.info("Starting Pandoc Bridge on %s:%d", settings.host, settings.port)
     uvicorn.run(
         "src.main:app",
         host=settings.host,

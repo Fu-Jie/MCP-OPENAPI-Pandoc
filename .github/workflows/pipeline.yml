@@ -13,13 +13,16 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: "pages-${{ github.ref }}"
+  cancel-in-progress: true
 
 jobs:
   ci:
     name: CI - Test & Lint
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,10 +32,10 @@ jobs:
         with:
           pandoc-version: "latest"
 
-      - name: Setup Python
+      - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           cache: "pip"
 
       - name: Install dependencies
@@ -48,11 +51,42 @@ jobs:
         run: mypy src
 
       - name: Run tests with coverage
-        run: pytest --cov=src
+        run: pytest --cov=src --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage reports
+        if: matrix.python-version == '3.12'
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install bandit safety
+          pip install -e "."
+
+      - name: Run Bandit security scan
+        run: bandit -r src -ll -ii
+
+      - name: Check dependencies for vulnerabilities
+        run: safety check
+        continue-on-error: true
 
   cd:
     name: CD - Build & Deploy Docs
-    needs: ci
+    needs: [ci, security]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     environment:
@@ -85,7 +119,10 @@ jobs:
         run: mkdir -p public
 
       - name: Convert README to HTML
-        run: pandoc README.md -s -o public/index.html --metadata title="Pandoc Bridge"
+        run: |
+          pandoc README.md -s -o public/index.html \
+            --metadata title="Pandoc Bridge" \
+            --css=https://cdn.jsdelivr.net/npm/water.css@2/out/water.css
 
       - name: Export OpenAPI specification
         run: python scripts/export_openapi.py
@@ -93,6 +130,30 @@ jobs:
       - name: Generate API documentation with Redoc
         run: |
           npx @redocly/cli build-docs public/openapi.json -o public/api.html
+
+      - name: Create documentation index
+        run: |
+          cat > public/docs-index.html << 'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Pandoc Bridge Documentation</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+          </head>
+          <body>
+            <h1>Pandoc Bridge Documentation</h1>
+            <nav>
+              <ul>
+                <li><a href="index.html">README / Overview</a></li>
+                <li><a href="api.html">API Reference (Redoc)</a></li>
+                <li><a href="openapi.json">OpenAPI Specification (JSON)</a></li>
+              </ul>
+            </nav>
+          </body>
+          </html>
+          EOF
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

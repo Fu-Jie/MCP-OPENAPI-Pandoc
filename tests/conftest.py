@@ -1,9 +1,13 @@
 """Pytest configuration and fixtures."""
 
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 
-from src.auth.bearer import create_token
+# Set test API key before importing app
+os.environ["API_KEYS"] = "sk-test-key:2099-12-31"
+
 from src.main import app
 
 
@@ -15,20 +19,14 @@ def client() -> TestClient:
 
 @pytest.fixture
 def auth_token() -> str:
-    """Create a valid authentication token."""
-    return create_token(
-        subject="test-client",
-        scopes=["formats:read", "convert:text", "convert:file"],
-    )
+    """Create a valid API key."""
+    return "sk-test-key"
 
 
 @pytest.fixture
 def admin_token() -> str:
-    """Create an admin authentication token."""
-    return create_token(
-        subject="admin-client",
-        scopes=["admin"],
-    )
+    """Create an admin API key (same as auth_token, all keys are admin)."""
+    return "sk-test-key"
 
 
 @pytest.fixture

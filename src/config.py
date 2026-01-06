@@ -19,10 +19,9 @@ class Settings(BaseSettings):
     port: int = 8000
     log_level: str = "INFO"
 
-    # JWT settings
-    jwt_secret_key: str = "development-secret-key-change-in-production-min-32-chars"
-    jwt_algorithm: str = "HS256"
-    jwt_expire_hours: int = 24
+    # API Key settings
+    # Format: "sk-xxx:2025-12-31,sk-yyy:2026-06-30" or "sk-xxx,sk-yyy" (no expiry)
+    api_keys: str = ""
 
     # Conversion settings
     max_file_size_mb: int = 50
@@ -36,6 +35,27 @@ class Settings(BaseSettings):
     def max_file_size_bytes(self) -> int:
         """Return max file size in bytes."""
         return self.max_file_size_mb * 1024 * 1024
+
+    def get_api_keys(self) -> dict[str, str | None]:
+        """Get dict of API keys with their expiry dates.
+        
+        Returns:
+            Dict mapping API key to expiry date string (YYYY-MM-DD) or None
+        """
+        if not self.api_keys:
+            return {}
+        
+        result: dict[str, str | None] = {}
+        for item in self.api_keys.split(","):
+            item = item.strip()
+            if not item:
+                continue
+            if ":" in item:
+                key, expiry = item.split(":", 1)
+                result[key.strip()] = expiry.strip()
+            else:
+                result[item] = None
+        return result
 
 
 @lru_cache

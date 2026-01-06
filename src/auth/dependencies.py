@@ -5,7 +5,7 @@ from typing import Annotated
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from src.auth.bearer import TokenPayload, extract_bearer_token, verify_token
+from src.auth.bearer import TokenPayload, extract_bearer_token, verify_api_key
 from src.core.exceptions import AuthenticationError
 
 # HTTP Bearer security scheme for OpenAPI docs
@@ -18,22 +18,8 @@ async def require_auth_http(
         HTTPAuthorizationCredentials | None, Depends(http_bearer)
     ] = None,
 ) -> TokenPayload:
-    """Dependency to require authentication for HTTP requests.
-
-    This is used as a FastAPI dependency for protected endpoints.
-
-    Args:
-        request: The FastAPI request object
-        credentials: HTTP Bearer credentials from header
-
-    Returns:
-        TokenPayload with decoded token claims
-
-    Raises:
-        AuthenticationError: If authentication fails
-    """
+    """Dependency to require API key authentication for HTTP requests."""
     if credentials is None:
-        # Try to get from header directly
         auth_header = request.headers.get("Authorization")
         if not auth_header:
             raise AuthenticationError()
@@ -41,7 +27,7 @@ async def require_auth_http(
     else:
         token = credentials.credentials
 
-    return verify_token(token)
+    return verify_api_key(token)
 
 
 async def get_optional_auth(
@@ -52,15 +38,7 @@ async def get_optional_auth(
 ) -> TokenPayload | None:
     """Dependency for optional authentication.
 
-    Returns TokenPayload if valid token provided, None otherwise.
-    Does not raise errors for missing tokens.
-
-    Args:
-        request: The FastAPI request object
-        credentials: Optional HTTP Bearer credentials
-
-    Returns:
-        TokenPayload if authenticated, None otherwise
+    Returns TokenPayload if valid API key provided, None otherwise.
     """
     if credentials is None:
         auth_header = request.headers.get("Authorization")
@@ -74,29 +52,16 @@ async def get_optional_auth(
         token = credentials.credentials
 
     try:
-        return verify_token(token)
+        return verify_api_key(token)
     except AuthenticationError:
         return None
 
 
 async def require_auth_mcp(request: Request) -> TokenPayload:
-    """Dependency to require authentication for MCP requests.
-
-    This extracts the token from the request headers and validates it.
-    Used within MCP tool handlers.
-
-    Args:
-        request: The Starlette/FastAPI request object
-
-    Returns:
-        TokenPayload with decoded token claims
-
-    Raises:
-        AuthenticationError: If authentication fails
-    """
+    """Dependency to require API key authentication for MCP requests."""
     auth_header = request.headers.get("Authorization")
     token = extract_bearer_token(auth_header)
-    return verify_token(token)
+    return verify_api_key(token)
 
 
 # Type aliases for dependency injection

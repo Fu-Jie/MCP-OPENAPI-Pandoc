@@ -1,5 +1,7 @@
 """Tests for MCP server and tools."""
 
+import base64
+
 import pytest
 
 from src.mcp.tools import (
@@ -57,10 +59,21 @@ class TestMCPTools:
         assert "error" in result
 
     @pytest.mark.asyncio
+    async def test_convert_text_non_standalone(self) -> None:
+        """Test conversion without standalone flag."""
+        result = await convert_text_tool(
+            content="# Hello",
+            from_format="markdown",
+            to_format="html",
+            standalone=False,
+        )
+        assert result["success"] is True
+        # Non-standalone should not have full HTML document structure
+        assert "<!DOCTYPE" not in result.get("content", "")
+
+    @pytest.mark.asyncio
     async def test_convert_file_base64(self) -> None:
         """Test base64 file conversion."""
-        import base64
-
         content = "# Test Document\n\nThis is content."
         file_base64 = base64.b64encode(content.encode()).decode()
 
@@ -84,6 +97,20 @@ class TestMCPTools:
         assert result["success"] is False
         assert "error" in result
 
+    @pytest.mark.asyncio
+    async def test_convert_file_base64_unsupported_extension(self) -> None:
+        """Test base64 file conversion with unsupported file extension."""
+        content = "some content"
+        file_base64 = base64.b64encode(content.encode()).decode()
+
+        result = await convert_file_base64_tool(
+            file_base64=file_base64,
+            filename="test.xyz",
+            to_format="html",
+        )
+        assert result["success"] is False
+        assert "error" in result
+
 
 class TestMCPServer:
     """Tests for MCP server registration."""
@@ -102,3 +129,10 @@ class TestMCPServer:
         # Get registered tools - FastMCP stores tools internally
         # We can verify by checking the tool functions exist
         assert hasattr(mcp, "tool")
+
+    def test_mcp_server_has_instructions(self) -> None:
+        """Test MCP server has instructions configured."""
+        from src.mcp.server import mcp
+
+        assert mcp.instructions is not None
+        assert "Pandoc Bridge" in mcp.instructions

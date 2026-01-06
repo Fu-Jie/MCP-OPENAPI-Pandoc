@@ -5,13 +5,12 @@ services:
       dockerfile: Dockerfile
     container_name: pandoc-bridge
     ports:
-      - "8000:8000"
+      - "3411:8000"
     environment:
       - HOST=0.0.0.0
       - PORT=8000
       - LOG_LEVEL=INFO
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-development-secret-key-change-in-production-min-32-chars}
-      - JWT_EXPIRE_HOURS=24
+      - API_KEYS=${API_KEYS:-}
       - MAX_FILE_SIZE_MB=50
       - CONVERSION_TIMEOUT=60
     restart: unless-stopped

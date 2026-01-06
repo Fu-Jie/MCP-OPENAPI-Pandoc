@@ -9,6 +9,9 @@ from fastapi.responses import Response
 from sse_starlette.sse import EventSourceResponse
 
 from src.api.schemas import (
+    BatchConvertRequest,
+    BatchConvertResponse,
+    BatchConvertResultItem,
     ConvertStreamRequest,
     ConvertTextRequest,
     ConvertTextResponse,
@@ -42,6 +45,7 @@ async def get_service_info() -> ServiceInfo:
             "formats": "/api/v1/formats",
             "convert_text": "/api/v1/convert/text",
             "convert_file": "/api/v1/convert/file",
+            "convert_batch": "/api/v1/convert/batch",
             "convert_stream": "/api/v1/convert/stream",
             "mcp": "/mcp",
             "docs": "/docs",
@@ -100,6 +104,7 @@ async def convert_text(
             number_sections=request.options.number_sections,
             wrap=request.options.wrap,
             columns=request.options.columns,
+            pdf_engine=request.options.pdf_engine,
         )
 
     result = await service.convert_text(
@@ -224,3 +229,74 @@ async def convert_stream(
             }
 
     return EventSourceResponse(event_generator())
+
+
+@router.post(
+    "/api/v1/convert/batch",
+    response_model=BatchConvertResponse,
+    tags=["Convert"],
+)
+async def convert_batch(
+    request: BatchConvertRequest,
+    auth: RequireAuth,
+    service: Annotated[ConversionService, Depends(get_conversion_service)],
+) -> BatchConvertResponse:
+    """Convert multiple documents in a single request.
+
+    Requires authentication with 'convert:text' or 'admin' scope.
+    Maximum 20 items per batch.
+    """
+    auth.require_scope("convert:text")
+
+    results: list[BatchConvertResultItem] = []
+    succeeded = 0
+    failed = 0
+
+    for item in request.items:
+        try:
+            options = None
+            if item.options:
+                options = CoreConversionOptions(
+                    standalone=item.options.standalone,
+                    table_of_contents=item.options.table_of_contents,
+                    number_sections=item.options.number_sections,
+                    wrap=item.options.wrap,
+                    columns=item.options.columns,
+                    pdf_engine=item.options.pdf_engine,
+                )
+
+            result = await service.convert_text(
+                content=item.content,
+                from_format=item.from_format,
+                to_format=item.to_format,
+                options=options,
+            )
+
+            result_dict = result.to_dict()
+            results.append(
+                BatchConvertResultItem(
+                    id=item.id,
+                    success=True,
+                    content=result_dict["content"],
+                    content_type=result.content_type,
+                    is_binary=result.is_binary,
+                )
+            )
+            succeeded += 1
+
+        except Exception as e:
+            results.append(
+                BatchConvertResultItem(
+                    id=item.id,
+                    success=False,
+                    error=str(e),
+                )
+            )
+            failed += 1
+
+    return BatchConvertResponse(
+        results=results,
+        total=len(request.items),
+        succeeded=succeeded,
+        failed=failed,
+    )

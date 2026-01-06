@@ -191,3 +191,52 @@ class TestOpenAPI:
         """Test Swagger UI is available."""
         response = client.get("/docs")
         assert response.status_code == 200
+
+
+class TestStreamConversion:
+    """Tests for streaming conversion endpoint."""
+
+    def test_stream_convert_unauthorized(self, client: TestClient) -> None:
+        """Test that stream conversion requires authentication."""
+        response = client.post(
+            "/api/v1/convert/stream",
+            json={
+                "content": "# Hello",
+                "from_format": "markdown",
+                "to_format": "html",
+            },
+        )
+        assert response.status_code == 401
+
+    def test_stream_convert_success(
+        self, client: TestClient, auth_headers: dict[str, str]
+    ) -> None:
+        """Test streaming conversion returns SSE events."""
+        response = client.post(
+            "/api/v1/convert/stream",
+            headers=auth_headers,
+            json={
+                "content": "# Stream Test",
+                "from_format": "markdown",
+                "to_format": "html",
+            },
+        )
+        assert response.status_code == 200
+        assert "text/event-stream" in response.headers.get("content-type", "")
+
+
+class TestRateLimiting:
+    """Tests for rate limiting middleware."""
+
+    def test_health_not_rate_limited(self, client: TestClient) -> None:
+        """Test that health endpoint is not rate limited."""
+        # Make many requests to health endpoint
+        for _ in range(20):
+            response = client.get("/health")
+            assert response.status_code == 200
+
+    def test_root_not_rate_limited(self, client: TestClient) -> None:
+        """Test that root endpoint is not rate limited."""
+        for _ in range(20):
+            response = client.get("/")
+            assert response.status_code == 200

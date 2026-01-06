@@ -2,14 +2,13 @@
 
 import asyncio
 import base64
-import builtins
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from src.config import get_settings
-from src.core.exceptions import ConversionError, FormatNotSupportedError, TimeoutError
+from src.core.exceptions import ConversionError, ConversionTimeoutError, FormatNotSupportedError
 from src.core.formats import (
     FormatList,
     FormatManager,
@@ -28,6 +27,7 @@ class ConversionOptions:
     number_sections: bool = False
     wrap: str = "auto"  # auto, none, preserve
     columns: int = 80
+    pdf_engine: str | None = None  # pdflatex, xelatex, lualatex
     extra_args: list[str] = field(default_factory=list)
 
 
@@ -276,6 +276,13 @@ class ConversionService:
 
         cmd.extend(["--columns", str(options.columns)])
 
+        # PDF engine for CJK support
+        if options.pdf_engine:
+            cmd.extend(["--pdf-engine", options.pdf_engine])
+        elif to_format == "pdf":
+            # Default to xelatex for better Unicode/CJK support
+            cmd.extend(["--pdf-engine", "xelatex"])
+
         if options.extra_args:
             cmd.extend(options.extra_args)
 
@@ -308,10 +315,10 @@ class ConversionService:
                     proc.communicate(input=input_data),
                     timeout=self.settings.conversion_timeout,
                 )
-            except builtins.TimeoutError as e:
+            except TimeoutError as e:
                 proc.kill()
                 await proc.wait()
-                raise TimeoutError(self.settings.conversion_timeout) from e
+                raise ConversionTimeoutError(self.settings.conversion_timeout) from e
 
             if proc.returncode != 0:
                 error_msg = stderr.decode("utf-8", errors="replace").strip()

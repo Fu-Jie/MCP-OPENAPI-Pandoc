@@ -3,9 +3,9 @@
 from src.core.converter import ConversionOptions, ConversionResult, ConversionService
 from src.core.exceptions import (
     ConversionError,
+    ConversionTimeoutError,
     FormatNotSupportedError,
     PandocBridgeError,
-    TimeoutError,
 )
 from src.core.formats import FormatList, FormatManager
 
@@ -18,5 +18,5 @@ __all__ = [
     "PandocBridgeError",
     "FormatNotSupportedError",
     "ConversionError",
-    "TimeoutError",
+    "ConversionTimeoutError",
 ]
