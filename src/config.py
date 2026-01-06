@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     )
 
     # Server settings
-    host: str = "0.0.0.0"
+    host: str = "0.0.0.0"  # nosec B104
     port: int = 8000
     log_level: str = "INFO"
 
