@@ -50,7 +50,6 @@ permissions:
 env:
   REGISTRY: ghcr.io
   BUILD_PLATFORMS: "linux/amd64,linux/arm64"
-  CACHE_REGISTRY: "ghcr.io/${{ github.repository }}:buildcache"
   DOCKERFILE: "Dockerfile.example"
   BUILDX_INSTANCE: "gha-multiarch-test"
   REPORT_DIR: "artifacts"
@@ -194,7 +193,6 @@ jobs:
           provenance: false
           cache-from: |
             type=gha,scope=${{ github.workflow }}-${{ github.ref_name }}
-            type=registry,ref=${{ env.CACHE_REGISTRY }}
             type=local,src=/tmp/.buildx-cache
           cache-to: |
             type=gha,mode=max,scope=${{ github.workflow }}-${{ github.ref_name }}
