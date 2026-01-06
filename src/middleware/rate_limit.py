@@ -2,7 +2,7 @@
 
 import time
 from collections import defaultdict
-from typing import Callable
+from collections.abc import Callable
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -47,10 +47,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Check burst (requests in last second)
         last_second = now - 1
         recent = sum(1 for ts in self.requests[client_ip] if ts > last_second)
-        if recent >= self.burst_size:
-            return True
-
-        return False
+        return recent >= self.burst_size
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Process request with rate limiting."""

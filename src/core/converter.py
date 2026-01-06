@@ -8,7 +8,11 @@ from pathlib import Path
 from typing import Any
 
 from src.config import get_settings
-from src.core.exceptions import ConversionError, ConversionTimeoutError, FormatNotSupportedError
+from src.core.exceptions import (
+    ConversionError,
+    ConversionTimeoutError,
+    FormatNotSupportedError,
+)
 from src.core.formats import (
     FormatList,
     FormatManager,
