@@ -2,11 +2,15 @@
 """Export OpenAPI specification from the FastAPI application."""
 
 import json
+import os
 import sys
 from pathlib import Path
 
 # Add the project root to the path
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+# Set dummy API key for import (not used in spec generation)
+os.environ.setdefault("API_KEYS", "sk-dummy-key-for-openapi-export")
 
 
 def main() -> None:
