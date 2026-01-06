@@ -69,6 +69,15 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: "🔡 Set lowercase image name"
+        # ----------------------------------------------------------------
+        # 功能说明：GHCR 要求仓库名必须小写
+        # ----------------------------------------------------------------
+        id: image_name
+        run: |
+          IMAGE_NAME=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "image_name=${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+
       - name: "🛠️ Setup QEMU for tests"
         # ----------------------------------------------------------------
         # 功能说明：准备 QEMU，确保测试环境可跨架构运行
@@ -120,7 +129,7 @@ jobs:
         uses: docker/metadata-action@v5.5.1
         with:
           images: |
-            ghcr.io/${{ github.repository }}
+            ghcr.io/${{ steps.image_name.outputs.image_name }}
           tags: |
             type=raw,value=latest,enable=${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
             type=raw,value=${{ github.sha }}
@@ -174,7 +183,7 @@ jobs:
             --cache-from type=gha,scope=${{ github.workflow }}-test \
             --cache-to type=gha,mode=max,scope=${{ github.workflow }}-test \
             --load \
-            --tag ghcr.io/${{ github.repository }}:test-runtime .
+            --tag ghcr.io/${{ steps.image_name.outputs.image_name }}:test-runtime .
 
       - name: "🏗️ Build (no push, multi-arch)"
         # ----------------------------------------------------------------
