@@ -23,7 +23,7 @@ class TokenPayload(BaseModel):
     def require_scope(self, scope: str) -> None:
         """Require a specific scope, raise error if missing."""
         from src.core.exceptions import AuthorizationError
-        
+
         if not self.has_scope(scope):
             raise AuthorizationError(
                 f"Missing required scope: {scope}",

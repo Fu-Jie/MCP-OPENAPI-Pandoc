@@ -12,6 +12,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",  # Ignore extra fields in .env
     )
 
     # Server settings
@@ -38,13 +39,13 @@ class Settings(BaseSettings):
 
     def get_api_keys(self) -> dict[str, str | None]:
         """Get dict of API keys with their expiry dates.
-        
+
         Returns:
             Dict mapping API key to expiry date string (YYYY-MM-DD) or None
         """
         if not self.api_keys:
             return {}
-        
+
         result: dict[str, str | None] = {}
         for item in self.api_keys.split(","):
             item = item.strip()

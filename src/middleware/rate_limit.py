@@ -3,6 +3,7 @@
 import time
 from collections import defaultdict
 from collections.abc import Callable
+from typing import Any
 
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
@@ -14,7 +15,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     def __init__(
         self,
-        app: Callable,
+        app: Any,
         requests_per_minute: int = 60,
         burst_size: int = 10,
     ) -> None:
@@ -49,11 +50,14 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         recent = sum(1 for ts in self.requests[client_ip] if ts > last_second)
         return recent >= self.burst_size
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Any]
+    ) -> Response:
         """Process request with rate limiting."""
         # Skip rate limiting for health checks
         if request.url.path in ("/health", "/"):
-            return await call_next(request)
+            response: Response = await call_next(request)
+            return response
 
         client_ip = self._get_client_ip(request)
 
@@ -73,4 +77,5 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Record request
         self.requests[client_ip].append(time.time())
 
-        return await call_next(request)
+        response = await call_next(request)
+        return response

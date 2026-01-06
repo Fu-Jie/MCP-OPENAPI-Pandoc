@@ -58,7 +58,9 @@ async def convert_text(
     Returns:
         Dictionary with success status, converted content, and content type
     """
-    return await convert_text_tool(content, from_format, to_format, standalone, pdf_engine)
+    return await convert_text_tool(
+        content, from_format, to_format, standalone, pdf_engine
+    )
 
 
 @mcp.tool()

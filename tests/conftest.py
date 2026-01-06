@@ -9,6 +9,13 @@ from fastapi.testclient import TestClient
 os.environ["API_KEYS"] = "sk-test-key:2099-12-31"
 
 from src.main import app
+from src.middleware.rate_limit import RateLimitMiddleware
+
+# Disable rate limiting for tests
+for middleware in app.user_middleware:
+    if middleware.cls == RateLimitMiddleware:
+        app.user_middleware.remove(middleware)
+        break
 
 
 @pytest.fixture

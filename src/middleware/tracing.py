@@ -4,6 +4,7 @@ import logging
 import time
 import uuid
 from collections.abc import Callable
+from typing import Any
 
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -14,7 +15,9 @@ logger = logging.getLogger(__name__)
 class TracingMiddleware(BaseHTTPMiddleware):
     """Middleware to add request tracing with unique trace IDs."""
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Any]
+    ) -> Response:
         """Process request with tracing."""
         # Generate or extract trace ID
         trace_id = request.headers.get("X-Trace-ID") or str(uuid.uuid4())[:8]
@@ -32,7 +35,7 @@ class TracingMiddleware(BaseHTTPMiddleware):
         )
 
         # Process request
-        response = await call_next(request)
+        response: Response = await call_next(request)
 
         # Calculate duration
         duration_ms = (time.perf_counter() - start_time) * 1000

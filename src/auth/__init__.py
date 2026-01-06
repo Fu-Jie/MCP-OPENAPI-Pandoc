@@ -1,5 +1,7 @@
 """Authentication module."""
 
+from typing import Any
+
 __all__ = [
     "TokenPayload",
     "verify_api_key",
@@ -11,8 +13,13 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str):
-    if name in ("TokenPayload", "verify_api_key", "verify_token", "extract_bearer_token"):
+def __getattr__(name: str) -> Any:
+    if name in (
+        "TokenPayload",
+        "verify_api_key",
+        "verify_token",
+        "extract_bearer_token",
+    ):
         from src.auth.bearer import (
             TokenPayload,
             extract_bearer_token,
